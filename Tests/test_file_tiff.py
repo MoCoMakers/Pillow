@@ -874,6 +874,40 @@ class TestFileTiff:
                 with Image.open(test_file):
                     pass
 
+    def test_open_tiff_uint16_multiband(self):
+        """Test opening multiband TIFFs and reading all channels."""
+
+        def check_pixel(im: Image.Image, expected_pixel, pos: tuple[int, int]):
+            actual_pixel = im.getpixel((0, 0))
+            if isinstance(actual_pixel, int):
+                actual_pixel = (actual_pixel,)
+            assert actual_pixel == expected_pixel
+
+        def check_image(im: Image.Image, width: int, height: int, expected_pixel):
+            assert im.width == width
+            assert im.height == height
+            for x in range(im.width):
+                for y in range(im.height):
+                    check_pixel(im, expected_pixel, (x, y))
+
+        base_value = 4660
+        for i in range(1, 6):
+            pixel = tuple([base_value + j for j in range(0, i)])
+            infile = f"Tests/images/uint16_{i}_{base_value}.tif"
+            im = Image.open(infile)
+
+            im.load()
+            check_image(im, 10, 10, pixel)
+
+            im1 = im.copy()
+            check_image(im1, 10, 10, pixel)
+
+            im2 = im.crop((2, 2, 7, 7))
+            check_image(im2, 5, 5, pixel)
+
+            im3 = im.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+            check_image(im3, 10, 10, pixel)
+
 
 @pytest.mark.skipif(not is_win32(), reason="Windows only")
 class TestFileTiffW32:
